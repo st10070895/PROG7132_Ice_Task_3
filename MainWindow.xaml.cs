@@ -14,76 +14,71 @@ namespace Ice_Task_3
 {
     public partial class MainWindow : Window
     {
-        private FamilyTree _familyTree;
+        private Tree<string> familyTree;
 
         public MainWindow()
         {
             InitializeComponent();
-
-            // Example initialization with the monarch
-            var monarch = new RoyalFamilyMember("Queen Elizabeth II", new DateTime(1926, 4, 21), true);
-            _familyTree = new FamilyTree(monarch);
-
-            // Adding example family members
-            var princeCharles = new RoyalFamilyMember("Prince Charles", new DateTime(1948, 11, 14), true);
-            _familyTree.AddFamilyMember(monarch, princeCharles);
-
-            // More family members can be added here...
-
-            // Display the family tree
-            DisplayFamilyTree(_familyTree.Root);
+            InitializeFamilyTree();
+            PopulateTreeView();
         }
 
-        private void DisplayFamilyTree(FamilyTreeNode rootNode)
+        private void InitializeFamilyTree()
         {
-            FamilyTreeView.Items.Clear();
-            var rootItem = new TreeViewItem { Header = rootNode.Member.Name };
-            FamilyTreeView.Items.Add(rootItem);
+            // Initialize the royal family tree
+            familyTree = new Tree<string>();
+            familyTree.Root = new TreeNode<string>() { Data = "Queen Elizabeth II" };
 
-            foreach (var child in rootNode.Children)
+            // Add children of Queen Elizabeth II
+            familyTree.Root.Children = new List<TreeNode<string>>
             {
-                AddNodes(rootItem, child);
+                new TreeNode<string>() { Data = "Charles, Prince of Wales", Parent = familyTree.Root },
+                new TreeNode<string>() { Data = "Anne, Princess Royal", Parent = familyTree.Root },
+                new TreeNode<string>() { Data = "Prince Andrew, Duke of York", Parent = familyTree.Root },
+                new TreeNode<string>() { Data = "Prince Edward, Earl of Wessex", Parent = familyTree.Root }
+            };
+
+            // Add children of Charles
+            familyTree.Root.Children[0].Children = new List<TreeNode<string>>()
+            {
+                new TreeNode<string> { Data = "Prince William, Duke of Cambridge", Parent = familyTree.Root.Children[0] },
+                new TreeNode<string> { Data = "Prince Harry, Duke of Sussex", Parent = familyTree.Root.Children[0] }
+            };
+        }
+
+        private void PopulateTreeView()
+        {
+            if (familyTree.Root != null)
+            {
+                TreeViewItem rootItem = new TreeViewItem { Header = familyTree.Root.Data };
+                FamilyTreeView.Items.Add(rootItem);
+                AddTreeItems(rootItem, familyTree.Root);
             }
         }
 
-        private void AddNodes(TreeViewItem parentItem, FamilyTreeNode node)
+        private void AddTreeItems(TreeViewItem parentItem, TreeNode<string> parentNode)
         {
-            var treeViewItem = new TreeViewItem { Header = node.Member.Name };
-            parentItem.Items.Add(treeViewItem);
-
-            foreach (var child in node.Children)
+            foreach (var child in parentNode.Children)
             {
-                AddNodes(treeViewItem, child);
+                TreeViewItem childItem = new TreeViewItem { Header = child.Data };
+                parentItem.Items.Add(childItem);
+                AddTreeItems(childItem, child);
             }
         }
 
         private void SearchButton_Click(object sender, RoutedEventArgs e)
         {
-            var name = SearchBox.Text;
-            var member = _familyTree.SearchMember(name);
+            string searchQuery = SearchBox.Text;
+            TreeNode<string> foundNode = familyTree.FindNode(familyTree.Root, searchQuery);
 
-            if (member != null)
+            if (foundNode != null)
             {
-                SearchResult.Text = $"Found: {member.Name}, Born: {member.DateOfBirth.ToShortDateString()}, Alive: {member.IsAlive}";
+                SearchResult.Text = $"{foundNode.Data} found in the tree!";
             }
             else
             {
-                SearchResult.Text = "Member not found.";
+                SearchResult.Text = $"{searchQuery} not found.";
             }
-        }
-
-        private void AddButton_Click(object sender, RoutedEventArgs e)
-        {
-            var name = AddNameBox.Text;
-            var dob = AddDOBPicker.SelectedDate ?? DateTime.Now;
-            var isAlive = AddAliveCheckBox.IsChecked == true;
-
-            var newMember = new RoyalFamilyMember(name, dob, isAlive);
-            // Adding the new member under the monarch for simplicity
-            _familyTree.AddFamilyMember(_familyTree.Root.Member, newMember);
-
-            // Refresh the family tree display
-            DisplayFamilyTree(_familyTree.Root);
         }
     }
 }
